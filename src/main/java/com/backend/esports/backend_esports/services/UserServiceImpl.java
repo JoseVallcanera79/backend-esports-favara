@@ -55,6 +55,14 @@ public class UserServiceImpl implements UserService {
         // 🔒 usuario NO verificado aún
         user.setEnabled(false);
 
+
+        // 🔥 ASIGNAR ROL AQUÍ
+        if (user.getEmail().equalsIgnoreCase("jazz_crack@hotmail.com")) {
+        user.setRol("admin");
+        } else {
+        user.setRol("user");
+        }
+
         User savedUser = repository.save(user);
 
         // 📩 ENVIAR EMAIL (NO ROMPE REGISTRO SI FALLA)
