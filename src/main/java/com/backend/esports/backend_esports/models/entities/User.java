@@ -24,6 +24,9 @@ public class User {
     @Column(columnDefinition = "LONGTEXT")
     private String foto;
 
+    @Column(nullable=false)
+    private boolean enabled = false;
+
     @Column
     private String rol;
 
@@ -81,5 +84,13 @@ public class User {
 
     public void setFoto(String foto) {
         this.foto = foto;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
     }
 }

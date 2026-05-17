@@ -20,6 +20,9 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EmailService emailService;
+
     @Override
     @Transactional(readOnly = true)
     public List<User> findAll() {
@@ -32,24 +35,36 @@ public class UserServiceImpl implements UserService {
         return repository.findById(id);
     }
 
-    // 🔥 REGISTRO
+    // 🔥 REGISTRO CON VERIFICACIÓN
     @Override
     @Transactional
     public User save(User user) {
 
-
         Optional<User> existingUser =
             repository.findByEmail(user.getEmail());
 
-    if (existingUser.isPresent()) {
-        throw new RuntimeException("El email ya existe");
-    }
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("El email ya existe");
+        }
 
+        // 🔐 password encriptada
         user.setPassword(
             passwordEncoder.encode(user.getPassword())
         );
 
-        return repository.save(user);
+        // 🔒 usuario NO verificado aún
+        user.setEnabled(false);
+
+        User savedUser = repository.save(user);
+
+        // 📩 ENVIAR EMAIL (NO ROMPE REGISTRO SI FALLA)
+        try {
+            emailService.enviarCorreo(savedUser.getEmail());
+        } catch (Exception e) {
+            System.out.println("Error enviando email: " + e.getMessage());
+        }
+
+        return savedUser;
     }
 
     // 🔥 EDITAR PERFIL
@@ -68,12 +83,10 @@ public class UserServiceImpl implements UserService {
             userDB.setEmail(user.getEmail());
             userDB.setFoto(user.getFoto());
 
-            // 🔥 SOLO si escribe nueva password
             if (
                 user.getPassword() != null &&
                 !user.getPassword().isBlank()
             ) {
-
                 userDB.setPassword(
                     passwordEncoder.encode(user.getPassword())
                 );
@@ -87,9 +100,24 @@ public class UserServiceImpl implements UserService {
         return Optional.empty();
     }
 
+    // 🔥 BORRAR USUARIO
     @Override
     @Transactional
     public void remove(Long id) {
         repository.deleteById(id);
+    }
+
+    // 🔥 ACTIVAR USUARIO (VERIFICACIÓN EMAIL)
+    @Transactional
+    public void enableUser(String email) {
+
+        User user = repository.findByEmail(email)
+            .orElseThrow(() ->
+                new RuntimeException("Usuario no encontrado")
+            );
+
+        user.setEnabled(true);
+
+        repository.save(user);
     }
 }

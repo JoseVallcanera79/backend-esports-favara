@@ -2,9 +2,11 @@ package com.backend.esports.backend_esports.controllers;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.backend.esports.backend_esports.models.entities.User;
@@ -32,6 +34,11 @@ public class AuthController {
                 .orElseThrow(() ->
                         new RuntimeException("Usuario no encontrado"));
 
+                        // 🚨 VERIFICACIÓN EMAIL
+        if (!user.isEnabled()) {
+            throw new RuntimeException("Debes verificar tu email");
+        }
+
         // 🔥 correcto
         boolean passwordCorrecta = passwordEncoder.matches(
                 loginData.getPassword(),
@@ -41,7 +48,23 @@ public class AuthController {
         if (!passwordCorrecta) {
             throw new RuntimeException("Contraseña incorrecta");
         }
-
+        
+        user.setPassword(null);
         return user;
     }
+
+    @GetMapping("/verify")
+public String verify(@RequestParam String email) {
+
+    User user = userRepository
+            .findByEmail(email)
+            .orElseThrow(() ->
+                    new RuntimeException("Usuario no encontrado"));
+
+    user.setEnabled(true);
+
+    userRepository.save(user);
+
+    return "Cuenta verificada correctamente";
+}
 }
